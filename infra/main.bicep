@@ -14,17 +14,21 @@ param prefix string
 @description('Existing VNet resource ID provided at deploy-time from VNET_RESOURCE_ID.')
 param vnetResourceId string
 
+
 @description('Existing Azure AI Foundry project endpoint from AZURE_EXISTING_AIPROJECT_ENDPOINT.')
-param foundryProjectEndpoint string = ''
+param foundryProjectEndpoint string
 
 @description('Existing Azure AI Foundry agent id in name:version format from AZURE_EXISTING_AGENT_ID.')
-param foundryAgentId string = ''
+param foundryAgentId string
 
 @description('Existing Azure AI Foundry project resource id from AZURE_EXISTING_AIPROJECT_RESOURCE_ID.')
-param foundryProjectResourceId string = ''
+param foundryProjectResourceId string
 
 @description('Existing Azure AI Foundry account resource id from AZURE_EXISTING_RESOURCE_ID.')
-param foundryResourceId string = ''
+var normalizedproject = toLower(foundryProjectResourceId)
+var projparts = split(normalizedproject, '/')
+var accountsIndex = indexOf(projparts, 'accounts')
+var foundryResourceId = accountsIndex == -1 ? '' : '${join(take(projparts, accountsIndex + 2), '/')}'
 
 @description('Optional Azure AI Foundry agent name from AZURE_FOUNDRY_AGENT_NAME. Can be used instead of AZURE_EXISTING_AGENT_ID.')
 param foundryAgentName string = ''
@@ -167,3 +171,4 @@ output AZURE_STORAGE_ACCOUNT_NAME string = storage.outputs.name
 output FUNCTION_API_URL string = 'https://${functionApp.outputs.defaultHostName}/api/style-check'
 output OFFICE_ADDIN_TASKPANE_URL string = 'https://${webApp.outputs.defaultHostname}'
 output VNET_RESOURCE_ID_ECHO string = existingVnet.id
+output AZURE_EXISTING_AIPROJECT_ENDPOINT string = foundryProjectEndpoint
