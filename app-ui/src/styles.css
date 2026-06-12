@@ -1,0 +1,56 @@
+:root {
+  font-family: Segoe UI, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.page {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.issue {
+  border-top: 1px solid;
+  padding: 12px 0;
+  display: grid;
+  gap: 4px;
+}
+
+.issue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.issue .fui-Text {
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.error,
+.suggestion {
+  display: block;
+}
+
+.suggestion {
+  white-space: pre-wrap;
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid;
+}
+
+.deploy-time {
+  opacity: 0.75;
+  text-align: right;
+}

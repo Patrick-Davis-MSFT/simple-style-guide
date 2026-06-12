@@ -1,0 +1,31 @@
+{
+  "name": "style-guide-foundry-app-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "node server.js",
+    "build": "vite build && node -e \"require('fs').copyFileSync('dist/assets/icon-32.png','dist/favicon.ico')\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluentui/react-components": "^9.58.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.0.5",
+    "@vitejs/plugin-react": "^4.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/office-js": "^1.0.580",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "style-guide-foundry-function",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"No transpile step required\"",
+    "start": "func host start",
+    "dev": "func host start --cors *",
+    "lint": "eslint src --ext .js"
+  },
+  "dependencies": {
+    "@azure/ai-projects": "^2.0.0-beta.1",
+    "@azure/functions": "^4.7.3",
+    "@azure/identity": "^4.10.2",
+    "openai": "^4.96.1"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.0.7504",
+    "eslint": "^8.57.1",
+    "globals": "^15.14.0"
+  }
+}

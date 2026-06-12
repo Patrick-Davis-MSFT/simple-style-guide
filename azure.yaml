@@ -1,0 +1,21 @@
+name: style-guide-foundry
+metadata:
+  template: style-guide-foundry@1.0.0
+
+infra:
+  provider: bicep
+  path: infra
+
+services:
+  function:
+    project: ./function
+    language: js
+    host: function
+
+  app-ui:
+    project: ./app-ui
+    language: js
+    host: appservice
+    hooks:
+      prepackage:
+        run: npm install && npm run build

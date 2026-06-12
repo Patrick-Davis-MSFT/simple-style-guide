@@ -1,0 +1,17 @@
+{
+  "name": "style-guide-foundry",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "app-ui",
+    "function"
+  ],
+  "scripts": {
+    "build": "npm run build -w function && npm run build -w app-ui",
+    "lint": "npm run lint -w function && npm run lint -w app-ui",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}
