@@ -172,3 +172,4 @@ output FUNCTION_API_URL string = 'https://${functionApp.outputs.defaultHostName}
 output OFFICE_ADDIN_TASKPANE_URL string = 'https://${webApp.outputs.defaultHostname}'
 output VNET_RESOURCE_ID_ECHO string = existingVnet.id
 output AZURE_EXISTING_AIPROJECT_ENDPOINT string = foundryProjectEndpoint
+output AZURE_EXISTING_AGENT_ID string = foundryAgentId

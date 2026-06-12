@@ -1,14 +1,6 @@
-metadata:
-  logo: Avatar_Default.svg
-  description: ""
-  modified_at: "1772551324"
-  microsoft.voice-live.enabled: "false"
-object: agent.version
 id: agent-government-style-guide:2
 name: agent-government-style-guide
-version: "2"
-description: ""
-created_at: 1772551324
+description: Government style guide enforcement agent.
 definition:
   kind: prompt
   model: gpt-4.1-mini
