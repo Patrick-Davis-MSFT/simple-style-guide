@@ -7,41 +7,11 @@ const configuredAgentId = process.env.AZURE_EXISTING_AGENT_ID;
 const configuredAgentName = process.env.AZURE_FOUNDRY_AGENT_NAME;
 const configuredAgentVersion = process.env.AZURE_FOUNDRY_AGENT_VERSION;
 const configuredOpenAIApiVersion = (
-  process.env.OPENAI_API_VERSION || process.env.AZURE_OPENAI_API_VERSION || '2025-03-01-preview'
+  process.env.OPENAI_API_VERSION || process.env.AZURE_OPENAI_API_VERSION || '2025-05-15-preview'
 ).trim();
-const configuredMaxOutputTokens = Number.parseInt(process.env.AZURE_OPENAI_MAX_TOKENS ?? '13000', 10);
-const configuredTemperature = Number.parseFloat(process.env.AZURE_OPENAI_TEMPERATURE ?? '0');
 
 let projectClient;
 let openAIClient;
-
-const styleCheckResponseFormat = {
-  type: 'json_schema',
-  json_schema: {
-    name: 'style_check_replacements',
-    strict: true,
-    schema: {
-      type: 'object',
-      properties: {
-        replacements: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              ORIGINAL_TEXT: { type: 'string' },
-              NEW_TEXT: { type: 'string' },
-              REASON: { type: 'string' },
-            },
-            required: ['ORIGINAL_TEXT', 'NEW_TEXT', 'REASON'],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ['replacements'],
-      additionalProperties: false,
-    },
-  },
-};
 
 async function getOpenAIClient() {
   if (!projectEndpoint) {
@@ -174,17 +144,16 @@ async function runAgentStyleCheck(inputText) {
     items: [{ type: 'message', role: 'user', content: inputText }],
   });
 
+  const responseBody = {
+    agent_reference: agentReference,
+  }
+
   const response = await client.responses.create(
     {
       conversation: conversation.id,
     },
     {
-      body: {
-        agent_reference: agentReference,
-        response_format: styleCheckResponseFormat,
-        max_output_tokens: Number.isFinite(configuredMaxOutputTokens) ? configuredMaxOutputTokens : 13000,
-        temperature: Number.isFinite(configuredTemperature) ? configuredTemperature : 0,
-      },
+      body: responseBody,
     },
   );
 
