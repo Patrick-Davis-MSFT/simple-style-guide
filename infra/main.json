@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "3075389305047337534"
+      "templateHash": "14558498700252698198"
     }
   },
   "parameters": {
@@ -272,7 +272,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "6342993808107622703"
+              "templateHash": "14271123015969284861"
             }
           },
           "parameters": {
@@ -309,13 +309,6 @@
               "type": "Microsoft.Storage/storageAccounts/blobServices",
               "apiVersion": "2021-09-01",
               "name": "[format('{0}/{1}', parameters('name'), 'default')]",
-              "properties": {
-                "staticWebsite": {
-                  "enabled": true,
-                  "indexDocument": "index.html",
-                  "error404Document": "404.html"
-                }
-              },
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
               ]
@@ -716,6 +709,12 @@
           },
           "appServicePlanId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionPlanDeployment'), '2025-04-01').outputs.resourceId.value]"
+          },
+          "functionAppInternalUrl": {
+            "value": "[format('https://{0}.azurewebsites.net', variables('functionAppName'))]"
+          },
+          "styleCheckApiUrl": {
+            "value": "[format('https://{0}.azurewebsites.net/api/style-check', variables('functionAppName'))]"
           }
         },
         "template": {
@@ -725,7 +724,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "2420018437004057679"
+              "templateHash": "14740043072161548392"
             }
           },
           "parameters": {
@@ -736,6 +735,12 @@
               "type": "string"
             },
             "appServicePlanId": {
+              "type": "string"
+            },
+            "functionAppInternalUrl": {
+              "type": "string"
+            },
+            "styleCheckApiUrl": {
               "type": "string"
             }
           },
@@ -754,7 +759,17 @@
                   "appCommandLine": "npm start",
                   "ftpsState": "Disabled",
                   "minTlsVersion": "1.2",
-                  "alwaysOn": true
+                  "alwaysOn": true,
+                  "appSettings": [
+                    {
+                      "name": "FUNCTION_APP_INTERNAL_URL",
+                      "value": "[parameters('functionAppInternalUrl')]"
+                    },
+                    {
+                      "name": "STYLE_CHECK_API_URL",
+                      "value": "[parameters('styleCheckApiUrl')]"
+                    }
+                  ]
                 }
               },
               "tags": {

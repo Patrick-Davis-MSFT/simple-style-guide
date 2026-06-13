@@ -36,6 +36,10 @@ type ReplacementApplySummary = {
   skippedCount: number;
 };
 
+type RuntimeConfig = {
+  functionUrl?: string;
+};
+
 const configuredBaseUrl = (import.meta.env.VITE_FUNCTION_BASE_URL ?? '').trim();
 const configuredApiUrl = (import.meta.env.FUNCTION_API_URL ?? '').trim();
 
@@ -98,6 +102,40 @@ export function App() {
   const [replacementNotice, setReplacementNotice] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isDisposed = false;
+
+    const loadRuntimeConfig = async () => {
+      try {
+        const response = await fetch('/api/config', {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const config = (await response.json()) as RuntimeConfig;
+        const runtimeFunctionUrl = (config.functionUrl ?? '').trim();
+
+        if (!isDisposed && runtimeFunctionUrl) {
+          setFunctionUrl(runtimeFunctionUrl);
+        }
+      } catch {
+        // Keep compile-time/default fallback URL when runtime config is unavailable.
+      }
+    };
+
+    void loadRuntimeConfig();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

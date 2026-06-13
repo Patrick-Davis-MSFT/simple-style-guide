@@ -1,6 +1,8 @@
 param name string
 param location string
 param appServicePlanId string
+param functionAppInternalUrl string
+param styleCheckApiUrl string
 
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   name: name
@@ -15,6 +17,16 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       alwaysOn: true
+      appSettings: [
+        {
+          name: 'FUNCTION_APP_INTERNAL_URL'
+          value: functionAppInternalUrl
+        }
+        {
+          name: 'STYLE_CHECK_API_URL'
+          value: styleCheckApiUrl
+        }
+      ]
     }
   }
   tags: {

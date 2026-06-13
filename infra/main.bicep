@@ -130,6 +130,8 @@ module webApp './modules/staticWebApp.bicep' = {
     name: webAppName
     location: location
     appServicePlanId: functionPlan.outputs.resourceId
+    functionAppInternalUrl: 'https://${functionAppName}.azurewebsites.net'
+    styleCheckApiUrl: 'https://${functionAppName}.azurewebsites.net/api/style-check'
   }
 }
 

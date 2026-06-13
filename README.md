@@ -42,6 +42,7 @@ azd version
 ```
 
 ### Signing in
+You will need both methods to run all scripts
 
 ```bash
 az login
@@ -90,7 +91,6 @@ This project uses three categories of `azd` environment variables:
 | `AZURE_FOUNDRY_ROLE_DEFINITION_GUID` | Optional | Role definition GUID to assign to Function managed identity at Foundry scope. |
 | `AZURE_OPENAI_API_VERSION` | Optional | Preferred API version string for Foundry Azure OpenAI client initialization (for example `2025-11-15-preview`). |
 | `OPENAI_API_VERSION` | Optional | API version string for Foundry Azure OpenAI client initialization (for example `2025-03-01-preview`). |
-| `FUNCTION_API_KEY` | Yes | Function host key used for `x-functions-key` header in front-end API calls. Retrieve after first deploy with `az functionapp keys list`. See [Post-deployment setup](#post-deployment-setup). |
 
 Notes:
 - **VNet prerequisite:** `VNET_RESOURCE_ID` must point to an existing VNet. If you do not have one, create it before provisioning (see [Create a VNet](#create-a-vnet-if-needed)).
@@ -112,7 +112,6 @@ Notes:
 | `FUNCTION_API_URL` | Bicep output | Deployed style-check endpoint URL, for example `https://<function>.azurewebsites.net/api/style-check`. |
 | `OFFICE_ADDIN_TASKPANE_URL` | Bicep output | Deployed task pane host URL, for example `https://<app>.azurestaticapps.net`. |
 | `VNET_RESOURCE_ID_ECHO` | Bicep output | Echo of the VNet resource ID passed at deploy time (for troubleshooting/verification). |
-| `FUNCTION_API_KEY` | Manual (post-deploy) | Function host key retrieved after first deploy and set with `azd env set`. Required for front-end API calls. |
 
 ### 3) Compatibility output variables used by scripts when available
 
@@ -123,7 +122,7 @@ Notes:
 
 Safe defaults used in code generation (non-network):
 - Office Add-in ID (GUID): `74f2d75f-6bd1-4bca-9ec0-df5cf006c58a`
-- Function runtime: Node.js 20, auth level `function`
+- Function runtime: Node.js 20
 - App UI framework: React + Fluent UI
 
 ## App UI environment variables
@@ -141,38 +140,23 @@ Notes:
 - `FUNCTION_API_URL` is produced by `azd` environment outputs and is available during deploy builds.
 - Vite variables are compile-time values, so any change requires rebuilding/redeploying `app-ui`.
 
-`app-ui` resolves the function key for the `x-functions-key` header in this order:
+### Function authentication model
 
-1. `VITE_FUNCTION_API_KEY`
-2. `FUNCTION_API_KEY`
+This deployment assumes Azure App Service Authentication / Authorization (Easy Auth) is enabled on the Function App.
 
-If no key is set, the header is not sent and authenticated Function endpoints will reject requests.
+- Function endpoints are expected to be protected by Easy Auth (Microsoft Entra ID), not by Function host keys.
+- `FUNCTION_API_KEY` and `VITE_FUNCTION_API_KEY` are not required in this deployment flow.
+- Requests from the Office add-in should authenticate through Easy Auth (for example, bearer token/cookie-backed session), not `x-functions-key`.
 
-**`FUNCTION_API_KEY` is required.** After the first `azd up`, retrieve the key and set it:
+⚠️ 🔒 **Security warning for secured environments:**
+In a secured production environment, you must enable and enforce Easy Auth on both surfaces to fully secure this solution:
+- Web application host used by the add-in (for example Static Web App/App Service front end)
+- Function App API backend
 
-```bash
-# Retrieve the default function key
-az functionapp keys list \
-  --resource-group "$(azd env get-value AZURE_RESOURCE_GROUP)" \
-  --name "$(azd env get-value AZURE_FUNCTION_APP_NAME)" \
-  --query "functionKeys.default" -o tsv
-
-# Set it in the azd environment
-azd env set FUNCTION_API_KEY <key-from-above>
-
-# Redeploy app-ui so the key is embedded in the build
-azd deploy
-```
-
-### Security considerations
-
-- `FUNCTION_API_KEY` and `VITE_FUNCTION_API_KEY` are compile-time front-end values.
-- If used in `app-ui`, the key is embedded in shipped JavaScript and can be extracted by end users.
-- Treat this as a convenience/dev option, not as a strong secret boundary.
-- Prefer one of these production patterns:
-	- Use a backend proxy that holds the function key server-side.
-	- Change the Function endpoint to require Microsoft Entra ID auth and call it with user/app tokens.
-	- Keep function-level keys for server-to-server calls only.
+✅ **Minimum secure baseline:**
+- Require authentication for unauthenticated requests
+- Use Microsoft Entra ID as the identity provider
+- Verify both front-end and API routes are protected before go-live
 
 ### Create a VNet (if needed)
 
@@ -326,37 +310,111 @@ Use this process whenever you need to load or reload the manifest in Word.
 
 If Word has a cached older manifest, remove the add-in and sideload it again.
 
-## Post-deployment setup
+## Deployment steps (recommended)
 
-After `azd up` succeeds, complete these steps:
+Use this deployment order:
 
-### 1) Retrieve and set the Function API key
+1. `azd up`
+2. `scripts/configure-foundry-agent-and-function-settings.sh`
+3. `scripts/sync-manifest-from-azd.sh`
+4. Configure Easy Auth authentication
+5. Upload manifest `app-ui/manifest.xml`
+
+### Step 1: Run `azd up`
+
+Provision infrastructure and deploy app components:
 
 ```bash
-# Get the default function key
-az functionapp keys list \
-  --resource-group "$(azd env get-value AZURE_RESOURCE_GROUP)" \
-  --name "$(azd env get-value AZURE_FUNCTION_APP_NAME)" \
-  --query "functionKeys.default" -o tsv
-
-# Set it in the azd environment
-azd env set FUNCTION_API_KEY <key-from-above>
-
-# Redeploy app-ui so the key is embedded in the client build
-azd deploy
+azd up
 ```
 
-### 2) Sync the manifest to deployed URLs
+This creates/updates the Function App, Static Web App, identity/RBAC wiring, and supporting resources.
+
+### Step 2: Run `scripts/configure-foundry-agent-and-function-settings.sh`
+
+Create/update the Foundry agent and apply required app settings locally and in Azure Function App:
+
+```bash
+bash scripts/configure-foundry-agent-and-function-settings.sh
+```
+
+If values are not already present in your `azd` environment, the script prompts for them.
+
+### Step 3: Run `scripts/sync-manifest-from-azd.sh`
+
+Sync Office add-in URLs in the manifest to the deployed host:
 
 ```bash
 bash scripts/sync-manifest-from-azd.sh
 ```
 
-> **Windows without bash:** Manually replace all URL hostnames in `app-ui/manifest.xml` with the value of `OFFICE_ADDIN_TASKPANE_URL` from `azd env get-value OFFICE_ADDIN_TASKPANE_URL`.
+> **Windows without bash:** manually replace all URL hostnames in `app-ui/manifest.xml` with the value from `azd env get-value OFFICE_ADDIN_TASKPANE_URL`.
 
-### 3) Assign Foundry RBAC (if not done during provisioning)
+### Step 4: Configure Easy Auth authentication
 
-See [Foundry RBAC for the Function managed identity](#foundry-rbac-for-the-function-managed-identity).
+Enable and configure Authentication/Authorization (Easy Auth) on the Function App.
+
+1. Open Azure Portal -> Function App -> Authentication.
+2. Enable Authentication.
+3. Add Microsoft identity provider (Microsoft Entra ID).
+4. Set unauthenticated requests to require authentication.
+5. Save configuration and verify sign-in flow works for your app.
+
+This project assumes Easy Auth is the protection boundary for Function endpoints.
+
+### Step 5: Upload manifest `app-ui/manifest.xml`
+
+Upload the updated manifest in Word:
+
+1. Open Word (web or desktop) and open a document.
+2. Go to Insert -> Add-ins / My Add-ins.
+3. Choose Upload My Add-in.
+4. Select `app-ui/manifest.xml`.
+5. Launch the task pane and verify calls succeed.
+
+If Word still uses an older manifest, remove the add-in and upload again.
+
+## Environment variables to set
+
+Set these before deployment and post-deployment scripts:
+
+### Required
+
+```bash
+azd env set AZURE_LOCATION <region>
+azd env set PREFIX <prefix>
+azd env set VNET_RESOURCE_ID <vnet-resource-id>
+```
+
+### Required for Foundry/Function integration
+
+```bash
+azd env set AZURE_EXISTING_AIPROJECT_ENDPOINT <foundry-project-endpoint>
+```
+
+Set one of these agent configurations:
+
+```bash
+# Option A: single id
+azd env set AZURE_EXISTING_AGENT_ID <agent-name:version>
+
+# Option B: split values
+azd env set AZURE_FOUNDRY_AGENT_NAME <agent-name>
+azd env set AZURE_FOUNDRY_AGENT_VERSION <agent-version>
+```
+
+### Optional
+
+```bash
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+azd env set AZURE_EXISTING_AIPROJECT_RESOURCE_ID <foundry-project-resource-id>
+azd env set AZURE_EXISTING_RESOURCE_ID <foundry-account-resource-id>
+azd env set AZURE_FOUNDRY_ROLE_DEFINITION_GUID <role-guid>
+azd env set AZURE_OPENAI_API_VERSION 2025-11-15-preview
+azd env set OPENAI_API_VERSION 2025-03-01-preview
+```
+
+No Function key variables are required for this flow.
 
 ## Smoke-test the API
 
@@ -367,15 +425,21 @@ You can test the deployed API without the Word add-in using `curl`.
 ```bash
 curl -X POST "$(azd env get-value FUNCTION_API_URL)" \
   -H "Content-Type: application/json" \
-  -H "x-functions-key: $(azd env get-value FUNCTION_API_KEY)" \
+  -H "Authorization: Bearer <entra-access-token>" \
   -d '{"text": "We must utilize the generator and it was decided by the committee."}'
 ```
 
 **Heartbeat:**
 
 ```bash
-curl -H "x-functions-key: $(azd env get-value FUNCTION_API_KEY)" \
+curl -H "Authorization: Bearer <entra-access-token>" \
   "https://$(azd env get-value AZURE_FUNCTION_APP_NAME).azurewebsites.net/api/heartbeat"
+```
+
+Token example:
+
+```bash
+az account get-access-token --resource api://<your-function-app-client-id> --query accessToken -o tsv
 ```
 
 Expected style-check response: a JSON object with `issues` and `replacements` arrays containing style-guide corrections (for example, "utilize" → "use", passive voice flagged).
@@ -416,7 +480,13 @@ npm run dev
 azd up
 ```
 
-2. Sync the add-in manifest to deployed URLs:
+2. Configure Foundry agent and Function settings:
+
+```bash
+bash scripts/configure-foundry-agent-and-function-settings.sh
+```
+
+3. Sync the add-in manifest to deployed URLs:
 
 ```bash
 bash scripts/sync-manifest-from-azd.sh
@@ -426,8 +496,9 @@ The script resolves the deployed host from URL outputs first (for example `OFFIC
 
 You can override this behavior by passing `--host <url>`.
 
-3. Sideload the updated `app-ui/manifest.xml` in Word.
-4. Run the same style check flow and verify responses come from the deployed backend.
+4. Configure Easy Auth in Azure Portal (Function App -> Authentication).
+5. Sideload the updated `app-ui/manifest.xml` in Word.
+6. Run the same style check flow and verify responses come from the deployed backend.
 
 ### Troubleshooting checklist
 
@@ -452,12 +523,7 @@ azd up
 
 Outputs include the Function App URL and Static Web App URL.
 
-After `azd up`, complete the [Post-deployment setup](#post-deployment-setup) steps:
-
-1. Retrieve and set `FUNCTION_API_KEY`, then redeploy with `azd deploy`.
-2. Sync the manifest: `bash scripts/sync-manifest-from-azd.sh`
-3. Assign Foundry RBAC if not already configured.
-4. Sideload the manifest in Word and test.
+After `azd up`, complete the [Deployment steps (recommended)](#deployment-steps-recommended) sequence.
 
 ## Scripts
 
