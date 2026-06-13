@@ -90,7 +90,7 @@ const checkFoundryProjectConnectivity = async (endpoint) => {
 
 app.http('heartbeat', {
   methods: ['GET'],
-  authLevel: 'function',
+  authLevel: 'anonymous',
   route: 'heartbeat',
   handler: async () => {
     const now = new Date();

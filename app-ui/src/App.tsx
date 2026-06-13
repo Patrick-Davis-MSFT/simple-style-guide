@@ -281,6 +281,82 @@ export function App() {
     }
   };
 
+  const getCurrentEntraAccessToken = async (): Promise<string> => {
+    const officeRuntimeAuth = (globalThis as any)?.OfficeRuntime?.auth;
+    const officeAuth = (globalThis as any)?.Office?.auth;
+    const tokenOptions = {
+      allowSignInPrompt: true,
+      allowConsentPrompt: true,
+      forMSGraphAccess: true,
+    };
+
+    if (typeof officeRuntimeAuth?.getAccessToken === 'function') {
+      try {
+        const token = await officeRuntimeAuth.getAccessToken(tokenOptions);
+        if (token) {
+          return token;
+        }
+      } catch {
+        // Fall through to other token providers.
+      }
+    }
+
+    if (typeof officeAuth?.getAccessToken === 'function') {
+      try {
+        const token = await officeAuth.getAccessToken(tokenOptions);
+        if (token) {
+          return token;
+        }
+      } catch {
+        // Fall through to browser host token provider.
+      }
+    }
+
+    try {
+      const meResponse = await fetch('/.auth/me', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!meResponse.ok) {
+        return '';
+      }
+
+      const identities = (await meResponse.json()) as Array<Record<string, unknown>>;
+
+      if (!Array.isArray(identities) || identities.length === 0) {
+        return '';
+      }
+
+      for (const identity of identities) {
+        const provider = String(identity.provider_name ?? identity.provider ?? '').toLowerCase();
+        const isEntraProvider =
+          provider.includes('aad') ||
+          provider.includes('entra') ||
+          provider.includes('azureactivedirectory') ||
+          provider.includes('microsoft');
+
+        if (isEntraProvider) {
+          const token = String(identity.id_token ?? identity.access_token ?? '');
+          if (token) {
+            return token;
+          }
+        }
+      }
+
+      for (const identity of identities) {
+        const token = String(identity.id_token ?? identity.access_token ?? '');
+        if (token) {
+          return token;
+        }
+      }
+    } catch {
+      return '';
+    }
+
+    return '';
+  };
+
   useEffect(() => {
     if (!isWordHost) {
       return;
@@ -353,10 +429,13 @@ export function App() {
 
     try {
       let textToAnalyze = selectedText;
+      let accessToken = '';
 
       if (isWordHost) {
         textToAnalyze = await readSelection();
       }
+
+      accessToken = await getCurrentEntraAccessToken();
 
       if (textToAnalyze.length > MAX_TEXT_LENGTH) {
         setError(
@@ -370,6 +449,7 @@ export function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({ text: textToAnalyze }),
       });

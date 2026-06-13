@@ -169,7 +169,7 @@ async function runAgentStyleCheck(inputText) {
 
 app.http('style-check', {
   methods: ['POST'],
-  authLevel: 'function',
+  authLevel: 'anonymous',
   route: 'style-check',
   handler: async (request, context) => {
     let body;

@@ -93,6 +93,25 @@ function proxyRequest(req, res) {
   const fwdHeaders = Object.assign({}, req.headers);
   fwdHeaders.host = targetUrl.hostname;
 
+  const incomingAuthHeader = Array.isArray(req.headers.authorization)
+    ? req.headers.authorization[0]
+    : req.headers.authorization;
+  const easyAuthIdToken = Array.isArray(req.headers['x-ms-token-aad-id-token'])
+    ? req.headers['x-ms-token-aad-id-token'][0]
+    : req.headers['x-ms-token-aad-id-token'];
+  const easyAuthAccessToken = Array.isArray(req.headers['x-ms-token-aad-access-token'])
+    ? req.headers['x-ms-token-aad-access-token'][0]
+    : req.headers['x-ms-token-aad-access-token'];
+
+  // Prefer explicit client Authorization; otherwise forward Easy Auth token from this Web App context.
+  if (incomingAuthHeader) {
+    fwdHeaders.authorization = incomingAuthHeader;
+  } else if (easyAuthIdToken) {
+    fwdHeaders.authorization = `Bearer ${easyAuthIdToken}`;
+  } else if (easyAuthAccessToken) {
+    fwdHeaders.authorization = `Bearer ${easyAuthAccessToken}`;
+  }
+
   const options = {
     hostname: targetUrl.hostname,
     port:     targetUrl.port || (isHttps ? 443 : 80),
