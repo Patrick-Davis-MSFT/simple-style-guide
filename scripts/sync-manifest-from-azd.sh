@@ -6,6 +6,11 @@ if ! command -v azd >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v az >/dev/null 2>&1; then
+  echo "Azure CLI (az) is required." >&2
+  exit 1
+fi
+
 usage() {
   cat <<'EOF'
 Usage: bash scripts/sync-manifest-from-azd.sh [--localhost] [--host <url>]
@@ -98,9 +103,48 @@ else
 fi
 
 escaped_host="$(printf '%s' "$host" | sed 's/[&#/]/\\&/g')"
+icon_base_url="$host"
+
+if [[ "$mode" == "azure" && -z "$host_override" ]]; then
+  storage_account_name="$(azd env get-value AZURE_STORAGE_ACCOUNT_NAME 2>/dev/null || true)"
+  storage_resource_group="$(azd env get-value AZURE_RESOURCE_GROUP 2>/dev/null || true)"
+
+  if [[ -z "$storage_account_name" ]]; then
+    echo "Could not resolve AZURE_STORAGE_ACCOUNT_NAME from azd outputs." >&2
+    exit 1
+  fi
+
+  storage_web_endpoint=""
+  if [[ -n "$storage_resource_group" ]]; then
+    storage_web_endpoint="$(az storage account show \
+      --name "$storage_account_name" \
+      --resource-group "$storage_resource_group" \
+      --query "primaryEndpoints.web" -o tsv 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$storage_web_endpoint" ]]; then
+    storage_web_endpoint="$(az storage account show \
+      --name "$storage_account_name" \
+      --query "primaryEndpoints.web" -o tsv 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$storage_web_endpoint" ]]; then
+    echo "Could not resolve Storage static website endpoint from Azure for account: $storage_account_name" >&2
+    exit 1
+  fi
+
+  icon_base_url="${storage_web_endpoint%/}"
+fi
+
+escaped_icon_base="$(printf '%s' "$icon_base_url" | sed 's/[&#/]/\\&/g')"
 
 sed -E -i \
-  "s#https?://(localhost:3000|[[:alnum:]-]+(\.[[:alnum:]-]+)?\.azurestaticapps\.net)#$escaped_host#g" \
+  "s#https?://(localhost:3000|[[:alnum:]-]+(\.[[:alnum:]-]+)?\.azurestaticapps\.net|[[:alnum:]-]+\.azurewebsites\.net)#$escaped_host#g" \
+  "$manifest_path"
+
+sed -E -i \
+  "s#DefaultValue=\"https?://[^\"]+/assets/icon-(16|32|80)\.png\"#DefaultValue=\"$escaped_icon_base/assets/icon-\1.png\"#g" \
   "$manifest_path"
 
 echo "Updated manifest URLs to ${host}"
+echo "Updated icon URLs to ${icon_base_url}"

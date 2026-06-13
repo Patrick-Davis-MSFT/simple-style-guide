@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.41.2.15936",
-      "templateHash": "564028790580203031"
+      "version": "0.44.1.10279",
+      "templateHash": "3075389305047337534"
     }
   },
   "parameters": {
@@ -37,30 +37,34 @@
     },
     "foundryProjectEndpoint": {
       "type": "string",
-      "defaultValue": "",
       "metadata": {
         "description": "Existing Azure AI Foundry project endpoint from AZURE_EXISTING_AIPROJECT_ENDPOINT."
       }
     },
     "foundryAgentId": {
       "type": "string",
-      "defaultValue": "",
       "metadata": {
         "description": "Existing Azure AI Foundry agent id in name:version format from AZURE_EXISTING_AGENT_ID."
       }
     },
     "foundryProjectResourceId": {
       "type": "string",
-      "defaultValue": "",
       "metadata": {
         "description": "Existing Azure AI Foundry project resource id from AZURE_EXISTING_AIPROJECT_RESOURCE_ID."
       }
     },
-    "foundryResourceId": {
+    "foundryAgentName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Existing Azure AI Foundry account resource id from AZURE_EXISTING_RESOURCE_ID."
+        "description": "Optional Azure AI Foundry agent name from AZURE_FOUNDRY_AGENT_NAME. Can be used instead of AZURE_EXISTING_AGENT_ID."
+      }
+    },
+    "foundryAgentVersion": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure AI Foundry agent version from AZURE_FOUNDRY_AGENT_VERSION. Can be used instead of AZURE_EXISTING_AGENT_ID."
       }
     },
     "foundryRoleDefinitionGuid": {
@@ -76,9 +80,21 @@
       "metadata": {
         "description": "OpenAI API version for Foundry Azure OpenAI client initialization (for example 2025-03-01-preview)."
       }
+    },
+    "azureOpenAIApiVersion": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "OpenAI API version from AZURE_OPENAI_API_VERSION. Preferred over OPENAI_API_VERSION when set."
+      }
     }
   },
   "variables": {
+    "normalizedproject": "[toLower(parameters('foundryProjectResourceId'))]",
+    "projparts": "[split(variables('normalizedproject'), '/')]",
+    "accountsIndex": "[indexOf(variables('projparts'), 'accounts')]",
+    "foundryResourceId": "[if(equals(variables('accountsIndex'), -1), '', format('{0}', join(take(variables('projparts'), add(variables('accountsIndex'), 2)), '/')))]",
+    "resolvedOpenAIApiVersion": "[if(empty(parameters('azureOpenAIApiVersion')), parameters('foundryOpenAIApiVersion'), parameters('azureOpenAIApiVersion'))]",
     "resourceToken": "[uniqueString(subscription().id, resourceGroup().id, parameters('location'), parameters('environmentName'))]",
     "normalizedPrefix": "[toLower(parameters('prefix'))]",
     "storageAccountName": "[toLower(format('azst{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 10)))]",
@@ -86,14 +102,14 @@
     "appInsightsName": "[format('azappi{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 8))]",
     "functionPlanName": "[format('azasp{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 8))]",
     "functionAppName": "[format('azfunc{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 8))]",
-    "staticWebAppName": "[format('azswa{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 8))]",
+    "webAppName": "[format('azweb{0}{1}', variables('normalizedPrefix'), substring(variables('resourceToken'), 0, 8))]",
     "vnetParts": "[split(parameters('vnetResourceId'), '/')]",
     "vnetSubscriptionId": "[variables('vnetParts')[2]]",
     "vnetResourceGroup": "[variables('vnetParts')[4]]",
     "vnetName": "[variables('vnetParts')[8]]",
-    "foundrySubscriptionId": "[if(empty(parameters('foundryResourceId')), '', split(parameters('foundryResourceId'), '/')[2])]",
-    "foundryResourceGroup": "[if(empty(parameters('foundryResourceId')), '', split(parameters('foundryResourceId'), '/')[4])]",
-    "foundryAccountName": "[if(empty(parameters('foundryResourceId')), '', split(parameters('foundryResourceId'), '/')[8])]"
+    "foundrySubscriptionId": "[if(empty(variables('foundryResourceId')), '', split(variables('foundryResourceId'), '/')[2])]",
+    "foundryResourceGroup": "[if(empty(variables('foundryResourceId')), '', split(variables('foundryResourceId'), '/')[4])]",
+    "foundryAccountName": "[if(empty(variables('foundryResourceId')), '', split(variables('foundryResourceId'), '/')[8])]"
   },
   "resources": [
     {
@@ -119,8 +135,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "2243779815957661301"
+              "version": "0.44.1.10279",
+              "templateHash": "13140429924897400165"
             }
           },
           "parameters": {
@@ -184,8 +200,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "16543685776090141790"
+              "version": "0.44.1.10279",
+              "templateHash": "12240348013461084486"
             }
           },
           "parameters": {
@@ -255,8 +271,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "17074550691311458838"
+              "version": "0.44.1.10279",
+              "templateHash": "6342993808107622703"
             }
           },
           "parameters": {
@@ -273,12 +289,15 @@
               "apiVersion": "2023-05-01",
               "name": "[parameters('name')]",
               "location": "[parameters('location')]",
+              "tags": {
+                "SecurityControl": "Ignore"
+              },
               "sku": {
                 "name": "Standard_LRS"
               },
               "kind": "StorageV2",
               "properties": {
-                "allowBlobPublicAccess": false,
+                "allowBlobPublicAccess": true,
                 "allowSharedKeyAccess": false,
                 "minimumTlsVersion": "TLS1_2",
                 "supportsHttpsTrafficOnly": true,
@@ -288,18 +307,36 @@
             },
             {
               "type": "Microsoft.Storage/storageAccounts/blobServices",
-              "apiVersion": "2023-05-01",
+              "apiVersion": "2021-09-01",
               "name": "[format('{0}/{1}', parameters('name'), 'default')]",
+              "properties": {
+                "staticWebsite": {
+                  "enabled": true,
+                  "indexDocument": "index.html",
+                  "error404Document": "404.html"
+                }
+              },
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
               ]
             },
             {
               "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-              "apiVersion": "2023-05-01",
+              "apiVersion": "2021-09-01",
               "name": "[format('{0}/{1}/{2}', parameters('name'), 'default', 'function-packages')]",
               "properties": {
                 "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('name'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'default', '$web')]",
+              "properties": {
+                "publicAccess": "Blob"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('name'), 'default')]"
@@ -358,8 +395,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "7146104421165859069"
+              "version": "0.44.1.10279",
+              "templateHash": "9131526843176702785"
             }
           },
           "parameters": {
@@ -378,10 +415,10 @@
               "location": "[parameters('location')]",
               "kind": "linux",
               "sku": {
-                "name": "EP1",
-                "tier": "ElasticPremium",
-                "size": "EP1",
-                "family": "EP",
+                "name": "B3",
+                "tier": "Basic",
+                "size": "B3",
+                "family": "B",
                 "capacity": 1
               },
               "properties": {
@@ -426,8 +463,8 @@
           "vnetResourceId": {
             "value": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('vnetSubscriptionId'), variables('vnetResourceGroup')), 'Microsoft.Network/virtualNetworks', variables('vnetName'))]"
           },
-          "staticWebAppHostname": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebAppDeployment'), '2025-04-01').outputs.defaultHostname.value]"
+          "webAppHostname": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.defaultHostname.value]"
           },
           "foundryProjectEndpoint": {
             "value": "[parameters('foundryProjectEndpoint')]"
@@ -435,14 +472,20 @@
           "foundryAgentId": {
             "value": "[parameters('foundryAgentId')]"
           },
+          "foundryAgentName": {
+            "value": "[parameters('foundryAgentName')]"
+          },
+          "foundryAgentVersion": {
+            "value": "[parameters('foundryAgentVersion')]"
+          },
           "foundryProjectResourceId": {
             "value": "[parameters('foundryProjectResourceId')]"
           },
           "foundryResourceId": {
-            "value": "[parameters('foundryResourceId')]"
+            "value": "[variables('foundryResourceId')]"
           },
           "foundryOpenAIApiVersion": {
-            "value": "[parameters('foundryOpenAIApiVersion')]"
+            "value": "[variables('resolvedOpenAIApiVersion')]"
           }
         },
         "template": {
@@ -451,8 +494,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "3688862950249351185"
+              "version": "0.44.1.10279",
+              "templateHash": "15148996067804483521"
             }
           },
           "parameters": {
@@ -474,7 +517,7 @@
             "vnetResourceId": {
               "type": "string"
             },
-            "staticWebAppHostname": {
+            "webAppHostname": {
               "type": "string"
             },
             "foundryProjectEndpoint": {
@@ -482,6 +525,14 @@
               "defaultValue": ""
             },
             "foundryAgentId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "foundryAgentName": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "foundryAgentVersion": {
               "type": "string",
               "defaultValue": ""
             },
@@ -524,8 +575,7 @@
                   "cors": {
                     "allowedOrigins": [
                       "https://portal.azure.com",
-                      "https://*.azurestaticapps.net",
-                      "[format('https://{0}', parameters('staticWebAppHostname'))]"
+                      "[format('https://{0}', parameters('webAppHostname'))]"
                     ]
                   },
                   "appSettings": [
@@ -590,6 +640,14 @@
                       "value": "[parameters('foundryAgentId')]"
                     },
                     {
+                      "name": "AZURE_FOUNDRY_AGENT_NAME",
+                      "value": "[parameters('foundryAgentName')]"
+                    },
+                    {
+                      "name": "AZURE_FOUNDRY_AGENT_VERSION",
+                      "value": "[parameters('foundryAgentVersion')]"
+                    },
+                    {
                       "name": "AZURE_EXISTING_AIPROJECT_RESOURCE_ID",
                       "value": "[parameters('foundryProjectResourceId')]"
                     },
@@ -599,6 +657,10 @@
                     },
                     {
                       "name": "OPENAI_API_VERSION",
+                      "value": "[parameters('foundryOpenAIApiVersion')]"
+                    },
+                    {
+                      "name": "AZURE_OPENAI_API_VERSION",
                       "value": "[parameters('foundryOpenAIApiVersion')]"
                     }
                   ]
@@ -632,14 +694,14 @@
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'appInsightsDeployment')]",
         "[resourceId('Microsoft.Resources/deployments', 'functionPlanDeployment')]",
-        "[resourceId('Microsoft.Resources/deployments', 'staticWebAppDeployment')]",
-        "[resourceId('Microsoft.Resources/deployments', 'storageDeployment')]"
+        "[resourceId('Microsoft.Resources/deployments', 'storageDeployment')]",
+        "[resourceId('Microsoft.Resources/deployments', 'webAppDeployment')]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "staticWebAppDeployment",
+      "name": "webAppDeployment",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -647,10 +709,13 @@
         "mode": "Incremental",
         "parameters": {
           "name": {
-            "value": "[variables('staticWebAppName')]"
+            "value": "[variables('webAppName')]"
           },
           "location": {
             "value": "[parameters('location')]"
+          },
+          "appServicePlanId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionPlanDeployment'), '2025-04-01').outputs.resourceId.value]"
           }
         },
         "template": {
@@ -659,8 +724,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "16052146399781943388"
+              "version": "0.44.1.10279",
+              "templateHash": "2420018437004057679"
             }
           },
           "parameters": {
@@ -669,19 +734,29 @@
             },
             "location": {
               "type": "string"
+            },
+            "appServicePlanId": {
+              "type": "string"
             }
           },
           "resources": [
             {
-              "type": "Microsoft.Web/staticSites",
+              "type": "Microsoft.Web/sites",
               "apiVersion": "2023-12-01",
               "name": "[parameters('name')]",
               "location": "[parameters('location')]",
-              "sku": {
-                "name": "Free",
-                "tier": "Free"
+              "kind": "app,linux",
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "httpsOnly": true,
+                "siteConfig": {
+                  "linuxFxVersion": "NODE|22-lts",
+                  "appCommandLine": "npm start",
+                  "ftpsState": "Disabled",
+                  "minTlsVersion": "1.2",
+                  "alwaysOn": true
+                }
               },
-              "properties": {},
               "tags": {
                 "azd-service-name": "app-ui"
               }
@@ -694,11 +769,14 @@
             },
             "defaultHostname": {
               "type": "string",
-              "value": "[reference(resourceId('Microsoft.Web/staticSites', parameters('name')), '2023-12-01').defaultHostname]"
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName]"
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'functionPlanDeployment')]"
+      ]
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -723,8 +801,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "3962540732039721418"
+              "version": "0.44.1.10279",
+              "templateHash": "14686135724500452060"
             }
           },
           "parameters": {
@@ -791,8 +869,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "7533913421115187860"
+              "version": "0.44.1.10279",
+              "templateHash": "10528724407065965652"
             }
           },
           "parameters": {
@@ -879,7 +957,82 @@
       ]
     },
     {
-      "condition": "[and(not(empty(parameters('foundryResourceId'))), not(empty(parameters('foundryRoleDefinitionGuid'))))]",
+      "condition": "[not(empty(variables('foundryResourceId')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "foundryResourceGroupRoleAssignmentsDeployment",
+      "subscriptionId": "[variables('foundrySubscriptionId')]",
+      "resourceGroup": "[variables('foundryResourceGroup')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "principalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionAppDeployment'), '2025-04-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.44.1.10279",
+              "templateHash": "14365303493345543498"
+            }
+          },
+          "parameters": {
+            "principalId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "cognitiveServicesUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908')]",
+            "openAIUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')]",
+            "foundryDevRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '64702f94-c441-49e6-a78b-ef80e0188fee')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, parameters('principalId'), variables('cognitiveServicesUserRoleDefinitionId'))]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "roleDefinitionId": "[variables('cognitiveServicesUserRoleDefinitionId')]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, parameters('principalId'), variables('openAIUserRoleDefinitionId'))]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "roleDefinitionId": "[variables('openAIUserRoleDefinitionId')]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "name": "[guid(resourceGroup().id, parameters('principalId'), variables('foundryDevRoleDefinitionId'))]",
+              "properties": {
+                "principalId": "[parameters('principalId')]",
+                "roleDefinitionId": "[variables('foundryDevRoleDefinitionId')]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'functionAppDeployment')]"
+      ]
+    },
+    {
+      "condition": "[and(not(empty(variables('foundryResourceId'))), not(empty(parameters('foundryRoleDefinitionGuid'))))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "foundryRoleAssignmentDeployment",
@@ -907,8 +1060,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "3169257680057713997"
+              "version": "0.44.1.10279",
+              "templateHash": "10148784743208562781"
             }
           },
           "parameters": {
@@ -958,13 +1111,21 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionAppDeployment'), '2025-04-01').outputs.name.value]"
     },
+    "AZURE_WEB_APP_NAME": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.name.value]"
+    },
+    "WEB_APP_NAME": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.name.value]"
+    },
     "AZURE_STATIC_WEB_APP_NAME": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebAppDeployment'), '2025-04-01').outputs.name.value]"
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.name.value]"
     },
     "STATIC_WEB_APP_NAME": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebAppDeployment'), '2025-04-01').outputs.name.value]"
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.name.value]"
     },
     "AZURE_STORAGE_ACCOUNT_NAME": {
       "type": "string",
@@ -976,11 +1137,19 @@
     },
     "OFFICE_ADDIN_TASKPANE_URL": {
       "type": "string",
-      "value": "[format('https://{0}', reference(resourceId('Microsoft.Resources/deployments', 'staticWebAppDeployment'), '2025-04-01').outputs.defaultHostname.value)]"
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Resources/deployments', 'webAppDeployment'), '2025-04-01').outputs.defaultHostname.value)]"
     },
     "VNET_RESOURCE_ID_ECHO": {
       "type": "string",
       "value": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', variables('vnetSubscriptionId'), variables('vnetResourceGroup')), 'Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+    },
+    "AZURE_EXISTING_AIPROJECT_ENDPOINT": {
+      "type": "string",
+      "value": "[parameters('foundryProjectEndpoint')]"
+    },
+    "AZURE_EXISTING_AGENT_ID": {
+      "type": "string",
+      "value": "[parameters('foundryAgentId')]"
     }
   }
 }

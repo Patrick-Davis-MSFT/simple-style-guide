@@ -150,6 +150,14 @@ module functionRoleAssignments './modules/functionRoleAssignments.bicep' = {
   }
 }
 
+module foundryResourceGroupRoleAssignments './modules/foundryResourceGroupRoleAssignments.bicep' = if (!empty(foundryResourceId)) {
+  name: 'foundryResourceGroupRoleAssignmentsDeployment'
+  scope: resourceGroup(foundrySubscriptionId, foundryResourceGroup)
+  params: {
+    principalId: functionApp.outputs.principalId
+  }
+}
+
 module foundryRoleAssignment './modules/foundryRoleAssignment.bicep' = if (!empty(foundryResourceId) && !empty(foundryRoleDefinitionGuid)) {
   name: 'foundryRoleAssignmentDeployment'
   scope: resourceGroup(foundrySubscriptionId, foundryResourceGroup)

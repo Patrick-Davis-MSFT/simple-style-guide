@@ -6,6 +6,10 @@ infra:
   provider: bicep
   path: infra
 
+hooks:
+  postprovision:
+    run: bash ./scripts/upload-icons-to-web-container.sh
+
 services:
   function:
     project: ./function

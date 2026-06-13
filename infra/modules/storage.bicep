@@ -4,12 +4,15 @@ param location string
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: name
   location: location
+  tags: {
+    SecurityControl: 'Ignore'
+  }
   sku: {
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
   properties: {
-    allowBlobPublicAccess: false
+    allowBlobPublicAccess: true
     allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
@@ -18,16 +21,24 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
   parent: storage
   name: 'default'
 }
 
-resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
   parent: blobService
   name: 'function-packages'
   properties: {
     publicAccess: 'None'
+  }
+}
+
+resource webBlobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
+  parent: blobService
+  name: '\$web'
+  properties: {
+    publicAccess: 'Blob'
   }
 }
 

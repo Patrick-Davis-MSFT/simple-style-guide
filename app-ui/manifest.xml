@@ -10,8 +10,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Style Guide Foundry" />
   <Description DefaultValue="Word task pane add-in for style checks." />
-  <IconUrl DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/assets/icon-80.png" />
+  <IconUrl DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-80.png" />
   <SupportUrl DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net" />
   <AppDomains>
     <AppDomain>https://azwebstylemew7bjsn.azurewebsites.net</AppDomain>
@@ -66,9 +66,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/assets/icon-16.png" />
-        <bt:Image id="Icon.32x32" DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/assets/icon-32.png" />
-        <bt:Image id="Icon.80x80" DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/assets/icon-80.png" />
+        <bt:Image id="Icon.16x16" DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://learn.microsoft.com/office/dev/add-ins/" />
