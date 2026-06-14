@@ -325,7 +325,6 @@ export function App() {
     const tokenOptions = {
       allowSignInPrompt: true,
       allowConsentPrompt: true,
-      forMSGraphAccess: true,
     };
 
     if (typeof officeRuntimeAuth?.getAccessToken === 'function') {

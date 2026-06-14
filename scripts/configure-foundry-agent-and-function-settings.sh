@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+workspace_root="$(cd -- "$script_dir/.." && pwd)"
+cd "$workspace_root"
+
 usage() {
   cat <<'EOF'
 Usage:

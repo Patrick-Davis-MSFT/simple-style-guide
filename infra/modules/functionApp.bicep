@@ -35,6 +35,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
       cors: {
         allowedOrigins: [
           'https://portal.azure.com'
+          'http://localhost:3000'
+          'http://localhost:8080'
+          'http://localhost:5000'
+          'http://localhost:8000'
           'https://${webAppHostname}'
         ]
       }

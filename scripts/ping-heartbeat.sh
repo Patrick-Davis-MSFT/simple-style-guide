@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+workspace_root="$(cd -- "$script_dir/.." && pwd)"
+cd "$workspace_root"
+
 heartbeat_url="${1:-${HEARTBEAT_URL:-http://localhost:7071/api/heartbeat}}"
 function_key="${2:-${FUNCTION_KEY:-}}"
 

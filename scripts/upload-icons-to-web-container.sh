@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+workspace_root="$(cd -- "$script_dir/.." && pwd)"
+cd "$workspace_root"
+
 if ! command -v azd >/dev/null 2>&1; then
   echo "azd is required." >&2
   exit 1
@@ -22,6 +26,22 @@ if [[ ! -d "$assets_dir" ]]; then
   echo "Assets directory not found: $assets_dir" >&2
   exit 1
 fi
+
+manifest_file="app-ui/manifest.xml"
+if [[ ! -f "$manifest_file" ]]; then
+  echo "Manifest file not found: $manifest_file" >&2
+  exit 1
+fi
+
+az storage blob service-properties update \
+  --auth-mode login \
+  --account-name "$storage_account_name" \
+  --static-website true \
+  --index-document index.html \
+  --404-document 404.html \
+  >/dev/null
+
+echo "Enabled static website settings on storage account: $storage_account_name"
 
 shopt -s nullglob
 icon_files=("$assets_dir"/icon-*.png)
@@ -63,4 +83,14 @@ for icon_file in "${icon_files[@]}"; do
   echo "Uploaded assets/$icon_name"
 done
 
-echo "Icon upload complete for storage account: $storage_account_name"
+az storage blob upload \
+  --auth-mode login \
+  --account-name "$storage_account_name" \
+  --container-name '$web' \
+  --name "manifest.xml" \
+  --file "$manifest_file" \
+  --overwrite true \
+  >/dev/null
+
+echo "Uploaded manifest.xml"
+echo "Icon and manifest upload complete for storage account: $storage_account_name"

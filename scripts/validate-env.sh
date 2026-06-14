@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+workspace_root="$(cd -- "$script_dir/.." && pwd)"
+cd "$workspace_root"
+
 if ! command -v azd >/dev/null 2>&1; then
   echo "azd is required but not installed." >&2
   exit 1

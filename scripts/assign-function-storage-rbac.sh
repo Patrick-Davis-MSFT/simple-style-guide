@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+workspace_root="$(cd -- "$script_dir/.." && pwd)"
+cd "$workspace_root"
+
 if ! command -v az >/dev/null 2>&1; then
   echo "Azure CLI (az) is required." >&2
   exit 1

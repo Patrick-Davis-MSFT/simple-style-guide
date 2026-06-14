@@ -10,6 +10,34 @@ const configuredOpenAIApiVersion = (
   process.env.OPENAI_API_VERSION || process.env.AZURE_OPENAI_API_VERSION || '2025-05-15-preview'
 ).trim();
 
+const allowedOrigins = new Set([
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'http://localhost:5000',
+  'http://localhost:8000',
+]);
+
+if (process.env.WEBAPP_URL) {
+  allowedOrigins.add(process.env.WEBAPP_URL.trim());
+}
+
+function getCorsHeaders(request) {
+  const origin = request.headers.get('origin') || '';
+  const isAllowed = allowedOrigins.has(origin) || /https:\/\/[\w-]+\.azurewebsites\.net$/i.test(origin);
+
+  if (!isAllowed) {
+    return {};
+  }
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'content-type, authorization',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
+
 let projectClient;
 let openAIClient;
 
@@ -168,16 +196,26 @@ async function runAgentStyleCheck(inputText) {
 }
 
 app.http('style-check', {
-  methods: ['POST'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   route: 'style-check',
   handler: async (request, context) => {
+    const corsHeaders = getCorsHeaders(request);
+
+    if (request.method === 'OPTIONS') {
+      return {
+        status: 204,
+        headers: corsHeaders,
+      };
+    }
+
     let body;
     try {
       body = await request.json();
     } catch {
       return {
         status: 400,
+        headers: corsHeaders,
         jsonBody: {
           error: 'Invalid request body. Expected JSON with a non-empty text field.',
         },
@@ -190,6 +228,7 @@ app.http('style-check', {
       if (!inputText) {
         return {
           status: 400,
+          headers: corsHeaders,
           jsonBody: {
             error: 'Invalid request body. Expected JSON with a non-empty text field.',
           },
@@ -211,6 +250,7 @@ app.http('style-check', {
 
       return {
         status: 200,
+        headers: corsHeaders,
         jsonBody: {
           analyzedAtUtc: new Date().toISOString(),
           issueCount: issues.length,
@@ -222,6 +262,7 @@ app.http('style-check', {
       context.error('Style check failed', error);
       return {
         status: 500,
+        headers: corsHeaders,
         jsonBody: {
           error: error instanceof Error ? error.message : 'Style check failed.',
         },

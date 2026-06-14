@@ -71,6 +71,41 @@ Manually replace all URL hostnames in `app-ui/manifest.xml` with the value from:
 azd env get-value OFFICE_ADDIN_TASKPANE_URL
 ```
 
+### Step 3.5: Configure Office SSO values in manifest
+
+The add-in manifest must include `WebApplicationInfo` so Word can request an access token for your API.
+
+1. Open [app-ui/manifest.xml](app-ui/manifest.xml).
+2. Set `WebApplicationInfo/Id` to your Microsoft Entra app registration Application (client) ID.
+3. Set `WebApplicationInfo/Resource` to your API Application ID URI (for example `api://<application-client-id>`).
+4. Keep scope `access_as_user` (or update it to your delegated API scope name if you changed it).
+
+Example:
+
+```xml
+<WebApplicationInfo>
+  <Id>11111111-2222-3333-4444-555555555555</Id>
+  <Resource>api://11111111-2222-3333-4444-555555555555</Resource>
+  <Scopes>
+   <Scope>access_as_user</Scope>
+  </Scopes>
+</WebApplicationInfo>
+```
+
+Microsoft Entra app registration requirements:
+
+1. In Entra ID App registrations, create or select one app used by the Office add-in.
+2. Under Expose an API:
+  - Set Application ID URI to `api://<application-client-id>`.
+  - Add delegated scope `access_as_user`.
+3. Under Authentication:
+  - Add platform `Single-page application` for the task pane origin URL.
+  - Add redirect URI `https://localhost:3000` for local sideload.
+4. Under API permissions:
+  - Add delegated permission for your own API scope `access_as_user`.
+  - Grant admin consent for the tenant if required by policy.
+5. Re-upload updated `app-ui/manifest.xml` after changing `WebApplicationInfo`.
+
 ### Step 4: Configure Easy Auth authentication
 
 Enable and configure Authentication/Authorization (Easy Auth) on the Function App.
@@ -78,8 +113,9 @@ Enable and configure Authentication/Authorization (Easy Auth) on the Function Ap
 1. Open Azure Portal -> Function App -> Authentication.
 2. Enable Authentication.
 3. Add Microsoft identity provider (Microsoft Entra ID).
-4. Set unauthenticated requests to require authentication.
-5. Save configuration and verify sign-in flow works for your app.
+4. Use the same Microsoft Entra app registration for both the Web app host and the Function App.
+5. Set unauthenticated requests to require authentication.
+6. Save configuration and verify sign-in flow works for your app.
 
 Function authentication assumption:
 
@@ -95,6 +131,7 @@ In a secured production environment, you must enable and enforce Easy Auth on bo
 ✅ **Minimum secure baseline:**
 - Require authentication for unauthenticated requests
 - Use Microsoft Entra ID as the identity provider
+- Use one shared Entra app registration across both Web app and Function App Easy Auth configuration
 - Verify both front-end and API routes are protected before go-live
 
 ### Step 5: Upload manifest `app-ui/manifest.xml`

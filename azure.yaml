@@ -6,15 +6,14 @@ infra:
   provider: bicep
   path: infra
 
-hooks:
-  postprovision:
-    run: bash ./scripts/upload-icons-to-web-container.sh
-
 services:
   function:
     project: ./function
     language: js
     host: function
+    hooks:
+      postdeploy:
+        run: bash ../scripts/configure-foundry-agent-and-function-settings.sh
 
   app-ui:
     project: ./app-ui
@@ -23,3 +22,9 @@ services:
     hooks:
       prepackage:
         run: npm install && npm run build
+      postdeploy:
+        run: | 
+          bash ../scripts/bump-manifest-version.sh
+          bash ../scripts/enable-static-web.sh
+          bash ../scripts/sync-manifest-from-azd.sh
+          bash ../scripts/upload-icons-to-web-container.sh

@@ -66,6 +66,13 @@ var foundrySubscriptionId = empty(foundryResourceId) ? '' : split(foundryResourc
 var foundryResourceGroup = empty(foundryResourceId) ? '' : split(foundryResourceId, '/')[4]
 var foundryAccountName = empty(foundryResourceId) ? '' : split(foundryResourceId, '/')[8]
 
+
+// get Client ID for function app and auth
+@description('The App Registration Client ID used for authenticating the function app to call Microsoft Graph, set from APP_REG_CLIENT_ID.')
+param appRegClientId string
+@description('The Application ID URI used for authenticating the function app to call Microsoft Graph, set from APP_REG_CLIENT_RESOURCE_URL. Normally \'api://{clientId}\'')
+param appRegAppIDURI string
+
 resource existingVnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = {
   scope: resourceGroup(vnetSubscriptionId, vnetResourceGroup)
   name: vnetName
@@ -183,3 +190,5 @@ output OFFICE_ADDIN_TASKPANE_URL string = 'https://${webApp.outputs.defaultHostn
 output VNET_RESOURCE_ID_ECHO string = existingVnet.id
 output AZURE_EXISTING_AIPROJECT_ENDPOINT string = foundryProjectEndpoint
 output AZURE_EXISTING_AGENT_ID string = foundryAgentId
+output AZURE_CLIENT_ID string = appRegClientId
+output AZURE_CLIENT_APP_ID_URI string = appRegAppIDURI

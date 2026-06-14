@@ -145,3 +145,4 @@ dist
 function/local.settings.json
 app-ui/manifest.local.xml
 deploy-gov/manifest.gov.xml
+app-ui/manifest.xml

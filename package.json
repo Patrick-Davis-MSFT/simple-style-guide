@@ -9,7 +9,8 @@
   "scripts": {
     "build": "npm run build -w function && npm run build -w app-ui",
     "lint": "npm run lint -w function && npm run lint -w app-ui",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "package:office-addin": "bash scripts/sync-manifest-from-azd.sh && bash scripts/bump-manifest-version.sh && bash scripts/create-office365-upload-zip.sh"
   },
   "devDependencies": {
     "prettier": "^3.4.2"

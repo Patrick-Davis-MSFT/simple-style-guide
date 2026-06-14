@@ -21,12 +21,12 @@ resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2021-09-01' = {
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
   parent: storage
   name: 'default'
 }
 
-resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
+resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobService
   name: 'function-packages'
   properties: {
@@ -34,7 +34,7 @@ resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/container
   }
 }
 
-resource webBlobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-09-01' = {
+resource webBlobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobService
   name: '\$web'
   properties: {

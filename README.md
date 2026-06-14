@@ -156,6 +156,7 @@ In a secured production environment, you must enable and enforce Easy Auth on bo
 ✅ **Minimum secure baseline:**
 - Require authentication for unauthenticated requests
 - Use Microsoft Entra ID as the identity provider
+- Use one shared Entra app registration across both Web app and Function App Easy Auth configuration
 - Verify both front-end and API routes are protected before go-live
 
 ### Create a VNet (if needed)
@@ -357,8 +358,9 @@ Enable and configure Authentication/Authorization (Easy Auth) on the Function Ap
 1. Open Azure Portal -> Function App -> Authentication.
 2. Enable Authentication.
 3. Add Microsoft identity provider (Microsoft Entra ID).
-4. Set unauthenticated requests to require authentication.
-5. Save configuration and verify sign-in flow works for your app.
+4. Use the same Microsoft Entra app registration for both the Web app host and the Function App.
+5. Set unauthenticated requests to require authentication.
+6. Save configuration and verify sign-in flow works for your app.
 
 This project assumes Easy Auth is the protection boundary for Function endpoints.
 
@@ -496,7 +498,7 @@ The script resolves the deployed host from URL outputs first (for example `OFFIC
 
 You can override this behavior by passing `--host <url>`.
 
-4. Configure Easy Auth in Azure Portal (Function App -> Authentication).
+4. Configure Easy Auth in Azure Portal for both Web app and Function App, using the same Entra app registration.
 5. Sideload the updated `app-ui/manifest.xml` in Word.
 6. Run the same style check flow and verify responses come from the deployed backend.
 
