@@ -4,11 +4,11 @@
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
-  <Id>74f2d75f-6bd1-4bca-9ec0-df5cf006c58a</Id>
-  <Version>1.0.0.0</Version>
-  <ProviderName>Style Guide Foundry</ProviderName>
+  <Id>23256265-3dbb-4b6d-8aa1-14d73ccb5bdd</Id>
+  <Version>1.0.0.4</Version>
+  <ProviderName>Simple Style Guide</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Style Guide Foundry" />
+  <DisplayName DefaultValue="Simple Style Guide" />
   <Description DefaultValue="Word task pane add-in for style checks." />
   <IconUrl DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://azststylemew7bjsner.z20.web.core.windows.net/assets/icon-80.png" />
@@ -22,6 +22,13 @@
   <DefaultSettings>
     <SourceLocation DefaultValue="https://azwebstylemew7bjsn.azurewebsites.net/" />
   </DefaultSettings>
+  <WebApplicationInfo>
+    <Id>00000000-0000-0000-0000-000000000000</Id>
+    <Resource>api://00000000-0000-0000-0000-000000000000</Resource>
+    <Scopes>
+      <Scope>access_as_user</Scope>
+    </Scopes>
+  </WebApplicationInfo>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xsi:type="ov:VersionOverridesV1_0" xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides">
     <Hosts>
